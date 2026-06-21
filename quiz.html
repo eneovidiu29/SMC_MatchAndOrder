@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Examen SMC - Test Aleatoriu</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 40px; border-top: 4px solid #3498db; }
+        h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        p.instructiuni { font-size: 0.9rem; color: #e67e22; font-weight: bold; margin-bottom: 15px; }
+
+        /* General Drag & Drop */
+        .match-container { display: flex; justify-content: space-between; gap: 30px; margin-bottom: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 300px; }
+        .drag-source { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; padding: 15px; background: #f8f9fa; border-radius: 8px; min-height: 100px; }
+        .draggable-item { background-color: #2980b9; color: white; padding: 10px 15px; border-radius: 5px; cursor: grab; text-align: center; font-weight: 500; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; user-select: none; }
+        .draggable-item:active { cursor: grabbing; background-color: #1c5980; }
+        
+        /* Potrivire Clasica */
+        .drop-zone-container { display: flex; align-items: center; margin: 10px 0; background-color: #ecf0f1; border-radius: 5px; padding: 10px; font-size: 0.9rem; border-left: 4px solid #bdc3c7; }
+        .drop-zone { width: 160px; min-height: 35px; border: 2px dashed #95a5a6; border-radius: 5px; margin-right: 15px; display: flex; align-items: center; justify-content: center; background-color: white; overflow: hidden; flex-shrink: 0;}
+        .drop-zone.hover { border-color: #2ecc71; background-color: #e8f8f5; }
+
+        /* Diagrame */
+        .diagram-container { position: relative; width: 100%; height: 450px; background-color: #eaecee; background-size: contain; background-repeat: no-repeat; background-position: center; border: 2px dashed #bdc3c7; border-radius: 8px; margin: 20px 0; }
+        .diagram-drop { position: absolute; width: 120px; min-height: 35px; background: rgb(255, 255, 255); box-shadow: 0 2px 5px rgba(0,0,0,0.3); margin-right: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+
+        /* Ordonare */
+        .sortable-list { list-style-type: none; padding: 0; }
+        .sortable-item { background-color: #fff; border: 1px solid #ddd; padding: 12px 15px; margin: 8px 0; border-radius: 5px; cursor: grab; display: flex; align-items: center; font-size: 0.95rem; background: #fdfdfd; }
+        .sortable-item:active { cursor: grabbing; background-color: #f0f0f0; }
+        .drag-handle { margin-right: 15px; color: #bdc3c7; font-size: 20px; cursor: grab; }
+
+        /* UI & Butoane */
+        .btn-container { text-align: center; margin: 20px 0; display: flex; justify-content: center; gap: 15px; }
+        button.action-btn { background-color: #34495e; color: white; border: none; padding: 12px 25px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        button.action-btn:hover { background-color: #2c3e50; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        button.verify-btn { background-color: #27ae60; }
+        button.verify-btn:hover { background-color: #219653; }
+        
+        #evaluation-panel { display: none; background: #2ecc71; color: white; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
+        #evaluation-panel h2 { color: white; border: none; font-size: 2rem; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center; color: #2c3e50;">Simulator Examen SMC</h1>
+    <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px;">Testul a generat aleatoriu 7 exerciții. Mult succes!</p>
+
+    <div class="btn-container">
+        <button class="action-btn" onclick="generateTest()">🔄 Generează Variantă Nouă</button>
+    </div>
+
+    <div id="test-container"></div>
+
+    <div id="evaluation-panel">
+        <h2>Rezultat: Nota <span id="score-display"></span> / 10</h2>
+    </div>
+
+    <div class="btn-container">
+        <button class="action-btn verify-btn" onclick="verifyTest()">✅ Verifică Testul</button>
+        <button class="action-btn" onclick="generateTest()">🔄 Generează Variantă Nouă</button>
+    </div>
+
+    <div id="exercise-pool" style="display: none;">
+
+        <div class="card ex-match" id="ex1">
+            <h2>1. Potrivire afirmații cu magistrale</h2>
+            <div class="match-container">
+                <div class="col drag-source">
+                    <div class="draggable-item" data-id="adrese">Adrese</div>
+                    <div class="draggable-item" data-id="adrese">Magistrala de adrese</div>
+                    <div class="draggable-item" data-id="control">Control</div>
+                    <div class="draggable-item" data-id="control">Magistrala de control</div>
+                    <div class="draggable-item" data-id="date">Date</div>
+                    <div class="draggable-item" data-id="capcana1">Magistrala Sistem</div>
+                    <div class="draggable-item" data-id="capcana2">Magistrala Periferică</div>
+                </div>
+                <div class="col">
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="adrese"></div><div>Adresarea locațiilor de memorie</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="control"></div><div>Coordonare și sincronizare</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="date"></div><div>Transfer efectiv al datelor</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="control"></div><div>Magistrala este bidirecțională</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="adrese"></div><div>Magistrala este unidirecțională</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ex-order" id="ex2">
+            <h2>2. Ordine corectă etape întrerupere</h2>
+            <ul class="sortable-list">
+                <li class="sortable-item" draggable="true" data-order="4"><span class="drag-handle">☰</span> Se executa rutina</li>
+                <li class="sortable-item" draggable="true" data-order="1"><span class="drag-handle">☰</span> Controlul programului este transferat</li>
+                <li class="sortable-item" draggable="true" data-order="5"><span class="drag-handle">☰</span> RETI revenire</li>
+                <li class="sortable-item" draggable="true" data-order="2"><span class="drag-handle">☰</span> Sistemul de intreruperi este oprit</li>
+                <li class="sortable-item" draggable="true" data-order="3"><span class="drag-handle">☰</span> Se incarca adresa</li>
+            </ul>
+        </div>
+
+        <div class="card ex-match" id="ex3">
+            <h2>3. Potrivirea afirmațiilor</h2>
+            <div class="match-container">
+                <div class="col drag-source">
+                    <div class="draggable-item" data-id="adresa">Bloc de adresă</div>
+                    <div class="draggable-item" data-id="instr">Bloc de instrucțiuni</div>
+                    <div class="draggable-item" data-id="acc">Registrul acumulator</div>
+                    <div class="draggable-item" data-id="pc">Numărătorul de program</div>
+                    <div class="draggable-item" data-id="capcana1">Unitatea ALU</div>
+                    <div class="draggable-item" data-id="capcana2">Registrul de Stare</div>
+                </div>
+                <div class="col">
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="instr"></div><div>Preia instrucțiunile și le decodifică</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="adresa"></div><div>Interpretează modul de adresare specificat</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="pc"></div><div>Conține întotdeauna adresa următoarei instrucțiuni</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="acc"></div><div>Stochează datele până când anumite operații vor fi efectuate</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ex-order" id="ex4">
+            <h2>4. Etapele întreruperii</h2>
+            <ul class="sortable-list">
+                <li class="sortable-item" draggable="true" data-order="3"><span class="drag-handle">☰</span> PC primeste adresa din ISR</li>
+                <li class="sortable-item" draggable="true" data-order="5"><span class="drag-handle">☰</span> Se revine cu pop(PC)+1</li>
+                <li class="sortable-item" draggable="true" data-order="1"><span class="drag-handle">☰</span> Executa instructiuni in bucla MPF</li>
+                <li class="sortable-item" draggable="true" data-order="4"><span class="drag-handle">☰</span> Se executa functia de tratare</li>
+                <li class="sortable-item" draggable="true" data-order="2"><span class="drag-handle">☰</span> Apare intreruperea, PC salvat in stiva</li>
+            </ul>
+        </div>
+
+        <div class="card ex-match" id="ex5">
+            <h2>5. În cazul comunicației SPI, identificați principiul din diagramă</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="mosi">MOSI</div>
+                <div class="draggable-item" data-id="miso">MISO</div>
+                <div class="draggable-item" data-id="sck">SCK</div>
+                <div class="draggable-item" data-id="ss">SS</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex5.png'); height: 350px;">
+                <div class="drop-zone diagram-drop" data-target="mosi" style="top: 8%; left: 40%;"></div>
+                <div class="drop-zone diagram-drop" data-target="miso" style="top: 22%; left: 40%;"></div>
+                <div class="drop-zone diagram-drop" data-target="sck"  style="top: 55%; left: 40%;"></div>
+                <div class="drop-zone diagram-drop" data-target="ss"   style="top: 75%; left: 40%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex6">
+            <h2>6. Plasați elementele care formează un mesaj UART</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="liber">linie liberă</div>
+                <div class="draggable-item" data-id="liber">linie liberă</div>
+                <div class="draggable-item" data-id="start">bit de start</div>
+                <div class="draggable-item" data-id="date">biți de date</div>
+                <div class="draggable-item" data-id="par">bit de paritate</div>
+                <div class="draggable-item" data-id="stop">1-2 biți de stop</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex6.png'); height: 250px;">
+                <div class="drop-zone diagram-drop" data-target="liber" style="top: 30%; left: 2%;"></div>
+                <div class="drop-zone diagram-drop" data-target="start" style="top: 65%; left: 12%;"></div>
+                <div class="drop-zone diagram-drop" data-target="date"  style="top: 50%; left: 33%;"></div>
+                <div class="drop-zone diagram-drop" data-target="par"   style="top: 65%; left: 50%;"></div>
+                <div class="drop-zone diagram-drop" data-target="stop"  style="top: 65%; left: 64%;"></div>
+                <div class="drop-zone diagram-drop" data-target="liber" style="top: 35%; left: 75%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex7">
+            <h2>7. Completați diagrama unui ADC cu comparații succesive</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="uin">Uin</div>
+                <div class="draggable-item" data-id="uc">Uc</div>
+                <div class="draggable-item" data-id="comp">COMP</div>
+                <div class="draggable-item" data-id="t">T</div>
+                <div class="draggable-item" data-id="sc">SC</div>
+                <div class="draggable-item" data-id="cc">CC</div>
+                <div class="draggable-item" data-id="d">D</div>
+                <div class="draggable-item" data-id="ras">RAS</div>
+                <div class="draggable-item" data-id="q">Q1..Qn</div>
+                <div class="draggable-item" data-id="b">b1..bn</div>
+                <div class="draggable-item" data-id="cna">CNA</div>
+                <div class="draggable-item" data-id="ref">REF</div>
+                <div class="draggable-item" data-id="rm">RM</div>
+                <div class="draggable-item" data-id="w">W</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex7.png');">
+                <div class="drop-zone diagram-drop" data-target="uin" style="top: 55%; left: 6%;"></div>
+                <div class="drop-zone diagram-drop" data-target="comp" style="top: 20%; left: 20%;"></div>
+                <div class="drop-zone diagram-drop" data-target="d" style="top: 36%; left: 35%;"></div>
+                <div class="drop-zone diagram-drop" data-target="ras" style="top: 37%; left: 43.5%;"></div>
+                <div class="drop-zone diagram-drop" data-target="t" style="top: 25%; left: 36%;"></div>
+                <div class="drop-zone diagram-drop" data-target="sc" style="top: 25%; left: 45%;"></div>
+                <div class="drop-zone diagram-drop" data-target="cc" style="top: 25%; left: 56%;"></div>
+                <div class="drop-zone diagram-drop" data-target="q" style="top: 45%; left: 44%;"></div>
+                <div class="drop-zone diagram-drop" data-target="w" style="top: 50%; left: 75%;"></div>
+                <div class="drop-zone diagram-drop" data-target="rm" style="top: 60%; left: 75%;"></div>
+                <div class="drop-zone diagram-drop" data-target="b" style="top: 80%; left: 44%;"></div>
+                <div class="drop-zone diagram-drop" data-target="cna" style="top: 90%; left: 44%;"></div>
+                <div class="drop-zone diagram-drop" data-target="ref" style="top: 90%; left: 64%;"></div>
+                <div class="drop-zone diagram-drop" data-target="uc" style="top: 85%; left: 12%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex8">
+            <h2>8. Principiul de funcționare SPI. Adăugați elementele schemei:</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="miso">MISO</div>
+                <div class="draggable-item" data-id="slave">Slave</div>
+                <div class="draggable-item" data-id="msb">msb</div>
+                <div class="draggable-item" data-id="master">Master</div>
+                <div class="draggable-item" data-id="mosi">MOSI</div>
+                <div class="draggable-item" data-id="lsb">lsb</div>
+                <div class="draggable-item" data-id="si">&</div>
+                <div class="draggable-item" data-id="sck">SCK</div>
+                <div class="draggable-item" data-id="ss">SS</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex8.png');">
+                 <div class="drop-zone diagram-drop" data-target="master" style="top: 6%; left: 20%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="mosi" style="top: 6%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="slave" style="top: 6%; left: 68%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="msb" style="top: 25%; left: 10%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="lsb" style="top: 25%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="miso" style="top: 21%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sck" style="top: 52%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="ss" style="top: 69%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="si" style="top: 62%; left: 70%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex9">
+            <h2>9. Arhitectura Atmega 328P presupune:</h2>
+            <div class="match-container">
+                <div class="col drag-source">
+                    <div class="draggable-item" data-id="harvard">Harvard</div>
+                    <div class="draggable-item" data-id="flash">Flash</div>
+                    <div class="draggable-item" data-id="sram">SRAM și EEPROM</div>
+                    <div class="draggable-item" data-id="mem">Memoria program</div>
+                    <div class="draggable-item" data-id="capcana1">Von Neumann</div>
+                    <div class="draggable-item" data-id="capcana2">SDRAM</div>
+                </div>
+                <div class="col">
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="mem"></div><div>Zona de Boot Loader și Aplicație sunt situate în...</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="harvard"></div><div>O arhitectură de tip...</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="sram"></div><div>Memorie de date</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="flash"></div><div>Memorie program</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex10">
+            <h2>10. Configurați schema astfel încât să avem o ieșire LOW:</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="vcc">Vcc</div>
+                <div class="draggable-item" data-id="t1">T1 PMOS</div>
+                <div class="draggable-item" data-id="0">0</div>
+                <div class="draggable-item" data-id="0">0</div>
+                <div class="draggable-item" data-id="1">1</div>
+                <div class="draggable-item" data-id="pin">GPIO Pin</div>
+                <div class="draggable-item" data-id="t2">NMOS T2</div>
+                <div class="draggable-item" data-id="gnd">Gnd</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex10.png');">
+                 <div class="drop-zone diagram-drop" data-target="0" style="top: 45%; left: 20%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="1" style="top: 45%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="vcc" style="top: 6.5%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="t1" style="top: 36%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="t2" style="top: 63%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="gnd" style="top: 90%; left: 45%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="pin" style="top: 43%; left: 60%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="0" style="top: 55%; left: 60%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex11">
+            <h2>11. Completați diagrama unui ADC cu rampă în treaptă:</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="s">S</div>
+                <div class="draggable-item" data-id="se">Se</div>
+                <div class="draggable-item" data-id="r">R</div>
+                <div class="draggable-item" data-id="q">Q</div>
+                <div class="draggable-item" data-id="comp">COMP</div>
+                <div class="draggable-item" data-id="uin">Uin</div>
+                <div class="draggable-item" data-id="num">CLR NUM CLK</div>
+                
+                <div class="draggable-item" data-id="uc">Uc</div>
+                <div class="draggable-item" data-id="cna">CNA</div>
+                <div class="draggable-item" data-id="ref">REF</div>
+                <div class="draggable-item" data-id="rm">RM</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex11.png');">
+                 <div class="drop-zone diagram-drop" data-target="s" style="top: 10%; left: 42%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="se" style="top: 12%; left: 60%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="r" style="top: 20%; left: 37%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="q" style="top: 20%; left: 48%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="comp" style="top: 28%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="num" style="top: 45%; left: 49%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="rm" style="top: 62%; left: 74%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="cna" style="top: 85%; left: 47%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="ref" style="top: 82%; left: 67%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="uc" style="top: 82%; left: 23%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="uin" style="top: 60%; left: 20%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex12">
+            <h2>12. Completați cu principalele etape ale procesului de conversie analog numerică:</h2>
+            <div class="col drag-source" style="gap: 5px;">
+                <div class="draggable-item" data-id="es">Eșantionare</div>
+                <div class="draggable-item" data-id="cu">Cuantizare</div>
+                <div class="draggable-item" data-id="cod">Codificare</div>
+                <div class="draggable-item" data-id="sa">Semnal analogic</div>
+                <div class="draggable-item" data-id="sd">Semnal discret</div>
+                <div class="draggable-item" data-id="sc">Semnal cuantizat</div>
+                <div class="draggable-item" data-id="sdig">Semnal digital</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex12.png'); height: 350px;">
+                 <div class="drop-zone diagram-drop" data-target="es" style="top: 27%; left: 20%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="cu" style="top: 27%; left: 43%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="cod" style="top: 27%; left: 67%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sa" style="top: 65%; left: 2%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sd" style="top: 65%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sc" style="top: 65%; left: 55%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sdig" style="top: 65%; left: 83%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex13">
+            <h2>13. Asociați definiția corespunzătoare:</h2>
+            <div class="match-container">
+                <div class="col drag-source">
+                    <div class="draggable-item" data-id="codif">Codificare și stocare</div>
+                    <div class="draggable-item" data-id="cuant">Cuantizare</div>
+                    <div class="draggable-item" data-id="esant">Eșantionare</div>
+                    <div class="draggable-item" data-id="capcana1">Filtrare</div>
+                    <div class="draggable-item" data-id="capcana2">Multiplexare</div>
+                </div>
+                <div class="col">
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="codif"></div><div>Valoarea cuantizată este convertită în cod binar și stocată într-un registru intern</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="cuant"></div><div>Valoarea menținută este convertită într-o valoare digitală discretă</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="esant"></div><div>Semnalul analogic continuu este prelevat la intervale de timp discrete</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex14">
+            <h2>14. Potriviți afirmațiile cu magistralele corespunzătoare</h2>
+            <div class="match-container">
+                <div class="col drag-source">
+                    <div class="draggable-item" data-id="adrese">Magistrala de adrese</div>
+                    <div class="draggable-item" data-id="adrese">Magistrala de adrese</div>
+                    <div class="draggable-item" data-id="date">Magistrala de date</div>
+                    <div class="draggable-item" data-id="date">Magistrala de date</div>
+                    <div class="draggable-item" data-id="control">Magistrala de control</div>
+                    <div class="draggable-item" data-id="control">Magistrala de control</div>
+                    <div class="draggable-item" data-id="capcana1">Magistrala de alimentare</div>
+                    <div class="draggable-item" data-id="capcana2">Magistrala internă</div>
+                </div>
+                <div class="col">
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="adrese"></div><div>Folosită pentru adresarea locațiilor de memorie și a porturilor I/O.</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="date"></div><div>Liniile transmit bidirecțional informațiile (intrare/ieșire din UCP).</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="control"></div><div>De obicei, magistrala este bidirecțională.</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="adrese"></div><div>Transmit doar semnale de ieșire (unidirecțională).</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="control"></div><div>Transportă semnalele de control care coordonează operațiunile și sincronizarea.</div></div>
+                    <div class="drop-zone-container"><div class="drop-zone" data-target="date"></div><div>Utilizată pentru transferul efectiv al datelor între CPU și periferice/memorie.</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex15">
+            <h2>15. Diagrame bloc UML: asociați elementele grafice</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="start">Etapă START</div>
+                <div class="draggable-item" data-id="trans">Transfer control</div>
+                <div class="draggable-item" data-id="stop">Etapă SFÂRȘIT</div>
+                <div class="draggable-item" data-id="decizie">Etapă decizie</div>
+                <div class="draggable-item" data-id="act">Acțiuni</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex15.png'); height: 250px;">
+                 <div class="drop-zone diagram-drop" data-target="start" style="top: 74%; left: 4%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="trans" style="top: 74%; left: 21%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="stop" style="top: 74%; left: 39.5%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="decizie" style="top: 74%; left: 57.5%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="act" style="top: 74%; left: 81%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-match" id="ex16">
+            <h2>16. Completați schema (mecanismul de validare a unei întreruperi):</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="toi">TOI</div>
+                <div class="draggable-item" data-id="tof">TOF</div>
+                <div class="draggable-item" data-id="cerere">Cerere de întrerupere</div>
+                <div class="draggable-item" data-id="clock">Clock</div>
+                <div class="draggable-item" data-id="uc">UC</div>
+                <div class="draggable-item" data-id="div">1,4,8,16</div>
+                <div class="draggable-item" data-id="tcnth">TCNT(H)</div>
+                <div class="draggable-item" data-id="tcntl">TCNT(L)</div>
+                <div class="draggable-item" data-id="num">Numărător</div>
+                <div class="draggable-item" data-id="acum">acumulator de impulsuri</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex16.png'); height: 350px;">
+                 <div class="drop-zone diagram-drop" data-target="clock" style="top: 43%; left: 1%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="uc" style="top: 57%; left: 1%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="div" style="top: 53%; left: 13%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="tcnth" style="top: 40%; left: 32.5%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="tcntl" style="top: 40%; left: 46.5%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="num" style="top: 57%; left: 40%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="acum" style="top: 57%; left: 70%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="tof" style="top: 22%; left: 55%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="toi" style="top: 1%; left: 55%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="cerere" style="top: 5%; left: 80%;"></div>
+            </div>
+        </div>
+
+        <div class="card ex-order" id="ex17">
+            <h2>17. Ordonați etapele parcurse pentru programarea unui MC în limbajul C:</h2>
+            <ul class="sortable-list">
+                <li class="sortable-item" draggable="true" data-order="3"><span class="drag-handle">☰</span> Legarea fișierelor obiect și generare fișier binar</li>
+                <li class="sortable-item" draggable="true" data-order="5"><span class="drag-handle">☰</span> Execuția codului pe microcontroler</li>
+                <li class="sortable-item" draggable="true" data-order="1"><span class="drag-handle">☰</span> Scrierea codului sursă</li>
+                <li class="sortable-item" draggable="true" data-order="4"><span class="drag-handle">☰</span> Programarea MC-ului cu fișierul binar</li>
+                <li class="sortable-item" draggable="true" data-order="2"><span class="drag-handle">☰</span> Compilarea codului sursă în fișier obiect</li>
+            </ul>
+        </div>
+
+        <div class="card ex-order" id="ex18">
+            <h2>18. Ordonați etapele de citire de la Slave, la comunicația I2C:</h2>
+            <ul class="sortable-list">
+                <li class="sortable-item" draggable="true" data-order="2"><span class="drag-handle">☰</span> Masterul trimite 8 biți ai adresei</li>
+                <li class="sortable-item" draggable="true" data-order="6"><span class="drag-handle">☰</span> Slave-ul transmite datele</li>
+                <li class="sortable-item" draggable="true" data-order="1"><span class="drag-handle">☰</span> Masterul trimite 11110XX către slave și R/W=0</li>
+                <li class="sortable-item" draggable="true" data-order="4"><span class="drag-handle">☰</span> Masterul trimite 11110XX către slave și R/W=1</li>
+                <li class="sortable-item" draggable="true" data-order="3"><span class="drag-handle">☰</span> Slave-ul trimite ACK (primul)</li>
+                <li class="sortable-item" draggable="true" data-order="5"><span class="drag-handle">☰</span> Slave-ul trimite ACK (al doilea)</li>
+            </ul>
+        </div>
+
+        <div class="card ex-match" id="ex19">
+            <h2>19. Completați diagrama unui Delta-Sigma ADC:</h2>
+            <div class="col drag-source">
+                <div class="draggable-item" data-id="mod">ΔΣ Modulator</div>
+                <div class="draggable-item" data-id="int">Integrator</div>
+                <div class="draggable-item" data-id="comp">Comparator</div>
+                <div class="draggable-item" data-id="flux">Flux Biți</div>
+                <div class="draggable-item" data-id="in">Intrare semnal analogic</div>
+                <div class="draggable-item" data-id="sum">Σ</div>
+                <div class="draggable-item" data-id="n">n BITS</div>
+                <div class="draggable-item" data-id="filtru">Filtru digital</div>
+                <div class="draggable-item" data-id="vrefp">VREF+</div>
+                <div class="draggable-item" data-id="dac">1 bit DAC</div>
+                <div class="draggable-item" data-id="vrefm">VREF-</div>
+            </div>
+            <div class="diagram-container" style="background-image: url('inlocuieste_cu_imaginea_ta_ex19.png');">
+                 <div class="drop-zone diagram-drop" data-target="mod" style="top: 2%; left: 37%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="in" style="top: 25%; left: 5%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="sum" style="top: 25%; left: 21%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="int" style="top: 12%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="comp" style="top: 12%; left: 46%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="flux" style="top: 16%; left: 60%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="filtru" style="top: 40%; left: 72%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="n" style="top: 25%; left: 82%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="vrefp" style="top: 48%; left: 40%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="dac" style="top: 77%; left: 30%;"></div>
+                 <div class="drop-zone diagram-drop" data-target="vrefm" style="top: 87%; left: 40%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funcție globală pentru a salva elementul tras (elimină nevoia de ID-uri unice per element)
+        let currentDraggedItem = null;
+
+        // Atașare ascultători de evenimente (apelată doar pentru exercițiile randate)
+        function initDragAndDrop(container) {
+            // -- LOGICĂ POTRIVIRI / DIAGRAME --
+            const draggables = container.querySelectorAll('.draggable-item');
+            const dropZones = container.querySelectorAll('.drop-zone');
+            const dragSources = container.querySelectorAll('.drag-source');
+
+            draggables.forEach(draggable => {
+                draggable.setAttribute('draggable', 'true');
+                draggable.addEventListener('dragstart', (e) => {
+                    draggable.classList.add('dragging');
+                    currentDraggedItem = draggable;
+                    e.dataTransfer.setData('text/plain', 'dummy'); // necesar Firefox
+                });
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                    currentDraggedItem = null;
+                });
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', e => { 
+                    e.preventDefault(); 
+                    if(currentDraggedItem && currentDraggedItem.closest('.card') === zone.closest('.card')) {
+                        zone.classList.add('hover'); 
+                    }
+                });
+                zone.addEventListener('dragleave', () => { zone.classList.remove('hover'); });
+                zone.addEventListener('drop', e => {
+                    e.preventDefault();
+                    zone.classList.remove('hover');
+                    
+                    if(!currentDraggedItem) return;
+                    if(currentDraggedItem.closest('.card') !== zone.closest('.card')) return;
+
+                    if(zone.children.length === 0) {
+                        zone.innerHTML = '';
+                        zone.appendChild(currentDraggedItem);
+                        currentDraggedItem.style.margin = "0";
+                        currentDraggedItem.style.width = "100%";
+                        currentDraggedItem.style.height = "100%";
+                        currentDraggedItem.style.boxSizing = "border-box";
+                    }
+                });
+            });
+
+            dragSources.forEach(source => {
+                source.addEventListener('dragover', e => e.preventDefault());
+                source.addEventListener('drop', e => {
+                    e.preventDefault();
+                    if(!currentDraggedItem) return;
+                    if(currentDraggedItem.closest('.card') !== source.closest('.card')) return;
+
+                    source.appendChild(currentDraggedItem);
+                    currentDraggedItem.style.margin = "5px";
+                    currentDraggedItem.style.width = "auto";
+                    currentDraggedItem.style.height = "auto";
+                });
+            });
+
+            // -- LOGICĂ ORDONARE --
+            const sortableLists = container.querySelectorAll('.sortable-list');
+            sortableLists.forEach(list => {
+                list.addEventListener('dragstart', (e) => {
+                    if(e.target.tagName === 'LI') {
+                        currentDraggedItem = e.target;
+                        setTimeout(() => e.target.style.opacity = '0.5', 0);
+                    }
+                });
+                list.addEventListener('dragend', (e) => {
+                    if(e.target.tagName === 'LI') {
+                        setTimeout(() => { e.target.style.opacity = '1'; currentDraggedItem = null; }, 0);
+                    }
+                });
+                list.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(list, e.clientY);
+                    if (currentDraggedItem && currentDraggedItem.tagName === 'LI') {
+                        if (afterElement == null) {
+                            list.appendChild(currentDraggedItem);
+                        } else {
+                            list.insertBefore(currentDraggedItem, afterElement);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Ajutor pentru Ordonare
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.sortable-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // Generare Test cu 7 intrebari random
+        function generateTest() {
+            const pool = document.getElementById('exercise-pool');
+            const container = document.getElementById('test-container');
+            const evalPanel = document.getElementById('evaluation-panel');
+            
+            container.innerHTML = '';
+            evalPanel.style.display = 'none';
+
+            let indexes = [];
+            while(indexes.length < 7){
+                let r = Math.floor(Math.random() * 19) + 1;
+                if(indexes.indexOf(r) === -1) indexes.push(r);
+            }
+
+            indexes.forEach((idx, i) => {
+                const original = pool.querySelector(`#ex${idx}`);
+                if(original) {
+                    const clone = original.cloneNode(true);
+                    clone.id = `active-ex${idx}`; 
+                    
+                    // Schimbă numărul exercițiului vizual pentru a fi de la 1 la 7
+                    const h2 = clone.querySelector('h2');
+                    h2.innerHTML = h2.innerHTML.replace(/^\d+\./, `${i + 1}.`);
+                    
+                    // Amestecă elementele draggabile pentru a nu fi mereu în aceeași ordine
+                    const dragSource = clone.querySelector('.drag-source');
+                    if (dragSource) {
+                        for (let j = dragSource.children.length; j >= 0; j--) {
+                            dragSource.appendChild(dragSource.children[Math.random() * j | 0]);
+                        }
+                    }
+
+                    // Amestecă listele de sortare
+                    const sortableList = clone.querySelector('.sortable-list');
+                    if(sortableList) {
+                       for (let j = sortableList.children.length; j >= 0; j--) {
+                           sortableList.appendChild(sortableList.children[Math.random() * j | 0]);
+                       }
+                    }
+
+                    container.appendChild(clone);
+                    initDragAndDrop(clone);
+                }
+            });
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Evaluare globală la final
+        function verifyTest() {
+            const container = document.getElementById('test-container');
+            const cards = container.querySelectorAll('.card');
+            let totalPoints = 0;
+
+            cards.forEach(card => {
+                let cardScore = 0;
+
+                // Verificare Exerciții de Potrivire / Diagrame
+                if(card.classList.contains('ex-match')) {
+                    const zones = card.querySelectorAll('.drop-zone');
+                    let correctZones = 0;
+                    zones.forEach(zone => {
+                        const requiredTarget = zone.getAttribute('data-target');
+                        if (zone.children.length > 0 && zone.children[0].classList.contains('draggable-item')) {
+                            const droppedId = zone.children[0].getAttribute('data-id');
+                            if (requiredTarget === droppedId) {
+                                correctZones++;
+                                zone.style.borderColor = "#2ecc71";
+                                zone.style.backgroundColor = "#e8f8f5";
+                            } else {
+                                zone.style.borderColor = "#e74c3c";
+                                zone.style.backgroundColor = "#fadbd8";
+                            }
+                        } else {
+                            zone.style.borderColor = "#e74c3c";
+                            zone.style.backgroundColor = "#fadbd8";
+                        }
+                    });
+                    // Punctaj parțial pe fiecare exercițiu
+                    cardScore = correctZones / zones.length;
+                } 
+                // Verificare Exerciții de Ordonare
+                else if(card.classList.contains('ex-order')) {
+                    const items = card.querySelectorAll('.sortable-item');
+                    let correctItems = 0;
+                    items.forEach((item, index) => {
+                        const expectedOrder = index + 1;
+                        const actualOrder = parseInt(item.getAttribute('data-order'));
+                        if (expectedOrder === actualOrder) {
+                            correctItems++;
+                            item.style.borderLeft = "6px solid #2ecc71";
+                            item.style.backgroundColor = "#e8f8f5";
+                        } else {
+                            item.style.borderLeft = "6px solid #e74c3c";
+                            item.style.backgroundColor = "#fadbd8";
+                        }
+                    });
+                    cardScore = correctItems / items.length;
+                }
+
+                totalPoints += cardScore; // max 1 punct pe exercițiu (total max 7)
+            });
+
+            // Calculare notă de la 1 la 10
+            const nota = 1 + (totalPoints / 7) * 9;
+            const evalPanel = document.getElementById('evaluation-panel');
+            const scoreDisplay = document.getElementById('score-display');
+            
+            scoreDisplay.innerText = nota.toFixed(2);
+            evalPanel.style.display = 'block';
+
+            // Scroll jos pentru a vedea rezultatul
+            evalPanel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Inițializare la prima deschidere a paginii
+        window.addEventListener('DOMContentLoaded', generateTest);
+
+    </script>
+</body>
+</html>
